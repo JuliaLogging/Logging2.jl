@@ -12,25 +12,15 @@ and serve as a staging area to improve the logging standard library itself.
 
 ### Redirect stdout or stderr to the logging system
 
-Use `redirect_stdout` to redirect all strings written to `Base.stdout` to any
-`AbstractLogger`, as in the following example (written in structured-concurrency
-style):
+Use `redirect_stdout` or `redirect_stderr` to redirect all strings written to
+`stdout` or `stderr` to any `AbstractLogger`:
 
 ```julia
-@sync begin
-    ready = Channel()
-    cancel = Channel()
-    Threads.@spawn redirect_stdout(current_logger(), ready, cancel)
-    take!(ready)
+redirect_stdout(current_logger()) do
     println("Hi")
     run(`ls`)
-    # ... do other stuff which may involve stdout
-    put!(cancel, true)
 end
 ```
-
-Similarly, `redirect_stderr` can be used to do the same for the `stderr`
-stream.
 
 ## The Wider Julia Logging Ecosystem
 

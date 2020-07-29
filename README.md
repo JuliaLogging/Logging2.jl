@@ -16,7 +16,7 @@ Use `Base.redirect_stdout` to redirect all strings written to `Base.stdout`
 to any AbstractLogger as in the following example (written in
 structured-concurrency style):
 
-```
+```julia
 @sync begin
     ready = Channel()
     cancel = Channel()

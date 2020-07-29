@@ -55,12 +55,11 @@ end
     end
 end
 
-@testset "redirect_stdout(::AbstractLogger)" begin
+@testset "redirect_stdout and redirect_stderr" begin
     @test_logs (:info,"Hi") (:info,"Hi2") (:info,"Hi3") (:info,"Hi4") @sync begin
         ready = Channel()
         cancel = Channel()
         Threads.@spawn redirect_stdout(current_logger(), ready, cancel)
-        # TODO: This is very manual and ugly.
         take!(ready)
         println("Hi")
         println("Hi2\nHi3")
@@ -68,6 +67,15 @@ end
         print("4")
         print("\n")
         put!(cancel, true) # kill the task listening on the pipe
+    end
+
+    @test_logs (:info,"Hi") @sync begin
+        ready = Channel()
+        cancel = Channel()
+        Threads.@spawn redirect_stderr(current_logger(), ready, cancel)
+        take!(ready)
+        println(stderr, "Hi")
+        put!(cancel, true)
     end
 end
 

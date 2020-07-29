@@ -8,7 +8,33 @@ include("LoggingStream.jl")
 #-------------------------------------------------------------------------------
 # Utilities
 
-"""
+for (redirect_func, stream_name) in [
+        (:redirect_stdout, :stdout),
+        (:redirect_stderr, :stderr)
+    ]
+    @eval function Base.$redirect_func(logger::AbstractLogger,
+                                       ready::Channel, cancel::Channel)
+        prev_stream = $stream_name
+        output = LineBufferedIO(LoggingStream(logger, id=$(QuoteNode(stream_name))))
+        rd,rw = $redirect_func()
+        try
+            @sync begin
+                Threads.@spawn write(output, rd)
+                put!(ready, true)
+                take!(cancel)
+                flush(rw)
+                close(rd)
+            end
+        finally
+            $redirect_func(prev_stream)
+            close(rw)
+            close(output)
+        end
+        nothing
+    end
+end
+
+@doc """
     redirect_stdout(logger::AbstractLogger, ready::Channel, cancel::Channel)
 
 Redirect the stdout stream to `logger`, with each line becoming a log event.
@@ -27,7 +53,7 @@ redirection is initialized and ready for other tasks.
     all uses require this, and it may be possible to improve the situation in
     the future.
 
-# Example
+# Examples
 
 Here's how you use `redirect_stdout` in structured concurrency style:
 
@@ -43,25 +69,17 @@ Here's how you use `redirect_stdout` in structured concurrency style:
     put!(cancel, true)
 end
 ```
-"""
-function Base.redirect_stdout(logger::AbstractLogger, ready::Channel, cancel::Channel)
-    prev_stdout = stdout
-    output = LineBufferedIO(LoggingStream(logger, id=:stdout))
-    rd,rw = Base.redirect_stdout()
-    try
-        @sync begin
-            Threads.@spawn write(output, rd)
-            put!(ready, true)
-            take!(cancel)
-            flush(rw)
-            close(rd)
-        end
-    finally
-        Base.redirect_stdout(prev_stdout)
-        close(rw)
-        close(output)
-    end
-    nothing
-end
+""" redirect_stdout
+
+@doc """
+    redirect_stderr(logger::AbstractLogger, ready::Channel, cancel::Channel)
+
+Redirect the stderr stream to `logger`, with each line becoming a log event.
+This function will block until `true` is written to the channel `cancel` (ie,
+`cancel` acts as a cancellation token). Use `take!(ready)` to ensure that the
+redirection is initialized and ready for other tasks.
+
+See [`redirect_stdout`](@ref) for examples and additional information.
+""" redirect_stderr
 
 end

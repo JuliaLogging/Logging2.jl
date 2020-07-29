@@ -9,11 +9,12 @@ include("LoggingStream.jl")
 # Utilities
 
 """
-    redirect_stdout(logger::AbstractLogger, cancel)
+    redirect_stdout(logger::AbstractLogger, ready::Channel, cancel::Channel)
 
 Redirect the stdout stream to `logger`, with each line becoming a log event.
-This function will block until any value is written to the channel `cancel`
-(ie, `cancel` acts as a cancellation token).
+This function will block until `true` is written to the channel `cancel` (ie,
+`cancel` acts as a cancellation token). Use `take!(ready)` to ensure that the
+redirection is initialized and ready for other tasks.
 
 !!! note
     In contrast to the dynamic scope of the usual logging system frontend (`@info`,
@@ -32,23 +33,26 @@ Here's how you use `redirect_stdout` in structured concurrency style:
 
 ```
 @sync begin
+    ready = Channel()
     cancel = Channel()
-    Threads.@spawn redirect_stdout(current_logger(), cancel)
-    yield()
+    Threads.@spawn redirect_stdout(current_logger(), ready, cancel)
+    take!(ready)
     println("Hi")
     # ... do stuff which may involve stdout
     put!(cancel, true)
 end
 ```
 """
-function Base.redirect_stdout(logger::AbstractLogger, cancel)
+function Base.redirect_stdout(logger::AbstractLogger, ready::Channel, cancel::Channel)
     prev_stdout = stdout
     output = LineBufferedIO(LoggingStream(logger, id=:stdout))
     rd,rw = Base.redirect_stdout()
     try
         @sync begin
             Threads.@spawn write(output, rd)
+            put!(ready, true)
             take!(cancel)
+            flush(rw)
             close(rd)
         end
     finally

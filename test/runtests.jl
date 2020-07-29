@@ -57,9 +57,11 @@ end
 
 @testset "redirect_stdout(::AbstractLogger)" begin
     @test_logs (:info,"Hi") (:info,"Hi2") (:info,"Hi3") (:info,"Hi4") @sync begin
+        ready = Channel()
         cancel = Channel()
-        Threads.@spawn redirect_stdout(current_logger(), cancel)
-        yield()
+        Threads.@spawn redirect_stdout(current_logger(), ready, cancel)
+        # TODO: This is very manual and ugly.
+        take!(ready)
         println("Hi")
         println("Hi2\nHi3")
         print("Hi")

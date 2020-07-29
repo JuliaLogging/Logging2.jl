@@ -37,8 +37,9 @@ Here's how you use `redirect_stdout` in structured concurrency style:
     cancel = Channel()
     Threads.@spawn redirect_stdout(current_logger(), ready, cancel)
     take!(ready)
-    println("Hi")
     # ... do stuff which may involve stdout
+    println("Hi")
+    run(`ls`)
     put!(cancel, true)
 end
 ```

@@ -13,14 +13,21 @@ and serve as a staging area to improve the logging standard library itself.
 ### Redirect stdout or stderr to the logging system
 
 Use `redirect_stdout` or `redirect_stderr` to redirect all strings written to
-`stdout` or `stderr` to any `AbstractLogger`:
+`stdout` or `stderr` to any `AbstractLogger` during the execution of a given
+`do` block:
 
 ```julia
-redirect_stdout(current_logger()) do
+logger = current_logger() # or construct one explicitly
+redirect_stdout(logger) do
     println("Hi")
     run(`ls`)
 end
 ```
+
+Note that `stdout` and `stder` are **global** streams, so this logging choice
+is made globally for the whole program. Therefore, you should probably only do
+this at the top level of your application (certainly never in any library
+code which you expect to run concurrently).
 
 ## The Wider Julia Logging Ecosystem
 

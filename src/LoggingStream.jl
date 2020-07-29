@@ -1,21 +1,21 @@
+import Base.CoreLogging.LogState
+
 """
     LoggingStream(logger; level, id)
 
 An `IO` object which collects incoming calls to `write` and writes them to the
 Julia logging system via `logger`. Most useful when combined with
 `LineBufferedIO`. The standard logging `_id` field will be set to `id`.
-
-In contrast to the dynamic scope of the usual logging system and
-`current_logger()`, streams may be passed around as objects.
 """
 struct LoggingStream{Logger <: AbstractLogger, Level} <: IO
     logger::Logger
+    logstate::LogState
     id::Symbol
     level::Level
 end
 
 function LoggingStream(logger; id, level=Logging.Info)
-    LoggingStream(logger, Symbol(id), level)
+    LoggingStream(logger, LogState(logger), Symbol(id), level)
 end
 
 function Base.unsafe_write(s::LoggingStream, p::Ptr{UInt8}, n::UInt)
@@ -27,7 +27,13 @@ function Base.unsafe_write(s::LoggingStream, p::Ptr{UInt8}, n::UInt)
     line = 0
     group = :io
     _module = Logging
-    if Logging.shouldlog(s.logger, level, _module, group, id)
+    # These tests capture the essence of the logging early-bailout in Base.CoreLogging.
+    #
+    # NOTE: These refer to internals of CoreLogging and will need to be kept in
+    # sync if things change upstream.
+    if #==# level >= Base.CoreLogging._min_enabled_level[] &&
+            level >= s.logstate.min_enabled_level &&
+            Logging.shouldlog(s.logger, level, _module, group, id)
         m = (n > 0 && unsafe_load(p, n) == UInt8('\n')) ? n-1 : n
         message = unsafe_string(p, m)
         Logging.handle_message(s.logger, level, message, _module, group, id, file, line)

@@ -92,4 +92,3 @@ end
 
 Base.isopen(io::LineBufferedIO) = lock(()->isopen(io.buf), io.buf_lock)
 
-

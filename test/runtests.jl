@@ -65,6 +65,12 @@ end
             print("\n")
         end
 
+    # test return value from `redirect_stdout`
+    @test (@test_logs (:info,"Hi") redirect_stdout(current_logger()) do
+        println("Hi")
+        101
+    end) == 101
+
     @test_logs (:info,"Hi") #=
         =# redirect_stderr(current_logger()) do
             println(stderr, "Hi")

@@ -12,10 +12,10 @@ for (redirect_func, stream_name) in [
         (:redirect_stdout, :stdout),
         (:redirect_stderr, :stderr)
     ]
-    @eval function Base.$redirect_func(f::Function, logger::AbstractLogger)
+    @eval function Base.$redirect_func(f::Function, logger::AbstractLogger; level=Logging.Info)
         result = nothing
         prev_stream = $stream_name
-        output = LineBufferedIO(LoggingStream(logger, id=$(QuoteNode(stream_name))))
+        output = LineBufferedIO(LoggingStream(logger, id=$(QuoteNode(stream_name)); level=level))
         rd,rw = $redirect_func()
         try
             @sync begin

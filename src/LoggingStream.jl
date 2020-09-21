@@ -20,10 +20,10 @@ end
 
 function Base.unsafe_write(s::LoggingStream, p::Ptr{UInt8}, n::UInt)
     # Remove any trailing newline
-    level = Logging.Info
+    level = s.level
     # Unclear what to set this metadata to, it's not really available.
     id = s.id
-    file = :unknown
+    file = "unknown"
     line = 0
     group = :io
     _module = Logging

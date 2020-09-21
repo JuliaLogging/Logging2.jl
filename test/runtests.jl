@@ -75,5 +75,10 @@ end
         =# redirect_stderr(current_logger()) do
             println(stderr, "Hi")
         end
+
+    @test_logs (:warn,"Hi") #=
+        =# redirect_stderr(current_logger(); level=Logging.Warn) do
+            println(stderr, "Hi")
+        end
 end
 

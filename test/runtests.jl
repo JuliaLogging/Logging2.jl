@@ -38,9 +38,9 @@ end
 end
 
 @testset "LoggingStream" begin
-    @test_logs (:info, "L1",     Logging, Ignored(), :asdf) #=
-            =# (:info, "L2",     Logging, Ignored(), :asdf) #=
-            =# (:info, "L3\nL4", Logging, Ignored(), :asdf) #=
+    @test_logs (:info, Text("L1"),     Logging, Ignored(), :asdf) #=
+            =# (:info, Text("L2"),     Logging, Ignored(), :asdf) #=
+            =# (:info, Text("L3\nL4"), Logging, Ignored(), :asdf) #=
     =# begin
         ls = Logging2.LoggingStream(current_logger(), id=:asdf)
         write(ls, "L1")
@@ -56,7 +56,8 @@ end
 end
 
 @testset "redirect_stdout and redirect_stderr" begin
-    @test_logs (:info,"Hi") (:info,"Hi2") (:info,"Hi3") (:info,"Hi4") #=
+    @test_logs (:info,Text("Hi"))  (:info,Text("Hi2")) #=
+        =#     (:info,Text("Hi3")) (:info,Text("Hi4")) #=
         =# redirect_stdout(current_logger()) do
             println("Hi")
             println("Hi2\nHi3")
@@ -66,17 +67,17 @@ end
         end
 
     # test return value from `redirect_stdout`
-    @test (@test_logs (:info,"Hi") redirect_stdout(current_logger()) do
+    @test (@test_logs (:info,Text("Hi")) redirect_stdout(current_logger()) do
         println("Hi")
         101
     end) == 101
 
-    @test_logs (:info,"Hi") #=
+    @test_logs (:info,Text("Hi")) #=
         =# redirect_stderr(current_logger()) do
             println(stderr, "Hi")
         end
 
-    @test_logs (:warn,"Hi") #=
+    @test_logs (:warn,Text("Hi")) #=
         =# redirect_stderr(current_logger(); level=Logging.Warn) do
             println(stderr, "Hi")
         end

@@ -35,7 +35,8 @@ function Base.unsafe_write(s::LoggingStream, p::Ptr{UInt8}, n::UInt)
             level >= s.logstate.min_enabled_level &&
             Logging.shouldlog(s.logger, level, _module, group, id)
         m = (n > 0 && unsafe_load(p, n) == UInt8('\n')) ? n-1 : n
-        message = unsafe_string(p, m)
+        # Wrap in Text to force plain rather than markdown text
+        message = Text(unsafe_string(p, m))
         Logging.handle_message(s.logger, level, message, _module, group, id, file, line)
     end
     # Could support some approximation of dynamic scoping with the following,

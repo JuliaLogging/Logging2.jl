@@ -2,6 +2,10 @@ module Logging2
 
 using Logging
 
+export @logshow
+
+include("show.jl")
+
 include("LineBufferedIO.jl")
 include("LoggingStream.jl")
 

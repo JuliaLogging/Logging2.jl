@@ -83,3 +83,11 @@ end
         end
 end
 
+@testset "@logshow" begin
+    x = 1
+    @test_logs (:info, Logging2.Shown(["x"=>1])) @logshow x
+    y = "hi"
+    @test_logs (:info, Logging2.Shown(["x"=>1, "y"=>"hi"])) @logshow x y
+    z = 2
+    @test_logs (:info, Logging2.Shown(["x + z"=>x+z])) @logshow x+z
+end

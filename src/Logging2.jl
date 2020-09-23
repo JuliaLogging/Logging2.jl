@@ -2,7 +2,7 @@ module Logging2
 
 using Logging
 
-export @logshow
+export @shown
 
 include("show.jl")
 

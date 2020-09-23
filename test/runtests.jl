@@ -83,11 +83,11 @@ end
         end
 end
 
-@testset "@logshow" begin
+@testset "@shown" begin
     x = 1
-    @test_logs (:info, Logging2.Shown(["x"=>1])) @logshow x
+    @test_logs (:info, Logging2.Shown(["x"=>1])) @shown x
     y = "hi"
-    @test_logs (:info, Logging2.Shown(["x"=>1, "y"=>"hi"])) @logshow x y
+    @test_logs (:info, Logging2.Shown(["x"=>1, "y"=>"hi"])) @shown x y
     z = 2
-    @test_logs (:info, Logging2.Shown(["x + z"=>x+z])) @logshow x+z
+    @test_logs (:info, Logging2.Shown(["x + z"=>x+z])) @shown x+z
 end

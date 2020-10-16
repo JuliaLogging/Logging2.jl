@@ -20,16 +20,19 @@ for (redirect_func, stream_name) in [
         try
             @sync begin
                 try
-                    Threads.@spawn write(output, rd)
+                    Threads.@spawn write(output, rd) # loops until !eof(rd)
                     result = f()
                 finally
-                    flush(rw)
-                    close(rd)
+                    # To close the read side of the pipe, we must close *all*
+                    # writers. This includes `rw`, but *also* the dup'd fd
+                    # created behind the scenes by redirect_func(). (To close
+                    # that, must call redirect_func() here with the prev stream.)
+                    close(rw)
+                    $redirect_func(prev_stream)
                 end
             end
         finally
-            $redirect_func(prev_stream)
-            close(rw)
+            close(rd)
             close(output)
         end
         return result

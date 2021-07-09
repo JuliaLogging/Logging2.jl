@@ -1,6 +1,6 @@
 # Logging2
 
-[![Build Status](https://github.com/c42f/Logging2.jl/workflows/CI/badge.svg)](https://github.com/c42f/Logging2.jl/actions)
+[![Build Status](https://github.com/JuliaLogging/Logging2.jl/workflows/CI/badge.svg)](https://github.com/JuliaLogging/Logging2.jl/actions)
 
 **Logging2** is a library which extends the standard Julia
 [Logging library](https://docs.julialang.org/en/v1/stdlib/Logging) with
@@ -24,7 +24,7 @@ redirect_stdout(logger) do
 end
 ```
 
-Note that `stdout` and `stder` are **global** streams, so this logging choice
+Note that `stdout` and `stderr` are **global** streams, so this logging choice
 is made globally for the whole program. Therefore, you should probably only do
 this at the top level of your application (certainly never in any library
 code which you expect to run concurrently).

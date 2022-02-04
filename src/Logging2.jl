@@ -8,36 +8,63 @@ include("LoggingStream.jl")
 #-------------------------------------------------------------------------------
 # Utilities
 
+
+function _redirect_to_logger(f::Function, logger::AbstractLogger,
+                             level_for_logs, redirect_func, prev_stream, stream_name)
+    result = nothing
+
+    output = LineBufferedIO(LoggingStream(logger; id=stream_name, level=level_for_logs))
+    rd,rw = redirect_func()
+    try
+        @sync begin
+            try
+                Threads.@spawn write(output, rd) # loops while !eof(rd)
+                result = f()
+            finally
+                # To close the read side of the pipe, we must close *all*
+                # writers. This includes `rw`, but *also* the dup'd fd
+                # created behind the scenes by redirect_func(). (To close
+                # that, must call redirect_func() here with the prev stream.)
+                close(rw)
+                redirect_func(prev_stream)
+            end
+        end
+    finally
+        close(rd)
+        close(output)
+    end
+    return result
+end
+
+# Incompatibility due to
+# https://github.com/JuliaLang/julia/pull/39132
+@static if VERSION < v"1.7"
+
 for (redirect_func, stream_name) in [
         (:redirect_stdout, :stdout),
         (:redirect_stderr, :stderr)
     ]
     @eval function Base.$redirect_func(f::Function, logger::AbstractLogger; level=Logging.Info)
-        result = nothing
-        prev_stream = $stream_name
-        output = LineBufferedIO(LoggingStream(logger, id=$(QuoteNode(stream_name)); level=level))
-        rd,rw = $redirect_func()
-        try
-            @sync begin
-                try
-                    Threads.@spawn write(output, rd) # loops until !eof(rd)
-                    result = f()
-                finally
-                    # To close the read side of the pipe, we must close *all*
-                    # writers. This includes `rw`, but *also* the dup'd fd
-                    # created behind the scenes by redirect_func(). (To close
-                    # that, must call redirect_func() here with the prev stream.)
-                    close(rw)
-                    $redirect_func(prev_stream)
-                end
-            end
-        finally
-            close(rd)
-            close(output)
-        end
-        return result
+        _redirect_to_logger(f, logger, level, $redirect_func,
+                            $stream_name, $(QuoteNode(stream_name)))
     end
 end
+
+else
+
+function (redirect_func::Base.RedirectStdStream)(f::Function, logger::AbstractLogger; level=Logging.Info)
+    # See https://github.com/JuliaLang/julia/blob/294b0dfcd308b3c3f829b2040ca1e3275595e058/base/stream.jl#L1417
+    prev_stream, stream_name =
+        redirect_func.unix_fd == 0 ? (stdin, :stdin) :
+        redirect_func.unix_fd == 1 ? (stdout, :stdout) :
+        redirect_func.unix_fd == 2 ? (stderr, :stderr) :
+        throw(ArgumentError("Not implemented to get old handle of fd except for stdio"))
+
+    _redirect_to_logger(f, logger, level, redirect_func, prev_stream, stream_name)
+end
+
+end
+
 
 @doc """
     redirect_stdout(f::Function, logger::AbstractLogger)

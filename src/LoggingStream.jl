@@ -31,7 +31,7 @@ function Base.unsafe_write(s::LoggingStream, p::Ptr{UInt8}, n::UInt)
     #
     # NOTE: These refer to internals of CoreLogging and will need to be kept in
     # sync if things change upstream.
-    if #==# level >= Base.CoreLogging._min_enabled_level[] &&
+    if #==# (VERSION >= v"1.10" ? level.level >= Base.CoreLogging._min_enabled_level[] : level >= Base.CoreLogging._min_enabled_level[]) &&
             level >= s.logstate.min_enabled_level &&
             Logging.shouldlog(s.logger, level, _module, group, id)
         m = (n > 0 && unsafe_load(p, n) == UInt8('\n')) ? n-1 : n
